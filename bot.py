@@ -1,17 +1,13 @@
 from curl_cffi import requests
 from fake_useragent import FakeUserAgent
 from datetime import datetime
-from colorama import Fore, Style
-import asyncio
-import hashlib
-import json
-import os
-import pytz
+from colorama import *
+import asyncio, hashlib, json, os, pytz
 
 wib = pytz.timezone('Asia/Jakarta')
 
 class Kivanet:
-    def __init__(self):
+    def __init__(self) -> None:
         self.headers = {
             "Accept": "*/*",
             "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -65,7 +61,7 @@ class Kivanet:
         try:
             if not os.path.exists(filename):
                 self.log(f"{Fore.RED}File {filename} Not Found.{Style.RESET_ALL}")
-                return []
+                return
 
             with open(filename, 'r') as file:
                 data = json.load(file)
@@ -81,7 +77,7 @@ class Kivanet:
             if use_proxy_choice == 1:
                 response = await asyncio.to_thread(requests.get, "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt")
                 response.raise_for_status()
-                content = response.text
+                content = response.text()
                 with open(filename, 'w') as f:
                     f.write(content)
                 self.proxies = content.splitlines()
@@ -161,7 +157,7 @@ class Kivanet:
     
     async def user_login(self, email: str, password: str, proxy=None, retries=5):
         url = "https://app.kivanet.com/api/user/login"
-        data = json.dumps({"email": email, "password": self.encode_password(password)})
+        data = json.dumps({"email":email, "password":self.encode_password(password)})
         headers = {
             **self.headers,
             "Authorization": "",
@@ -181,7 +177,7 @@ class Kivanet:
                 return None
         
     async def user_info(self, token: str, proxy=None, retries=5):
-        url = "https://app.kivanet.com/api/user/getMyAccountInfo"
+        url = "https://app.kivanet.com/api/user/getSignInfo"
         headers = {
             **self.headers,
             "Authorization": token,
@@ -220,7 +216,7 @@ class Kivanet:
         
     async def task_lists(self, token: str, proxy=None, retries=5):
         url = "https://app.kivanet.com/api/task/getTaskList"
-        data = json.dumps({"status": 1})
+        data = json.dumps({"status":1})
         headers = {
             **self.headers,
             "Authorization": token,
@@ -241,7 +237,7 @@ class Kivanet:
         
     async def do_tasks(self, token: str, task_id: str, proxy=None, retries=5):
         url = "https://app.kivanet.com/api/task/doTask"
-        data = json.dumps({"id": task_id})
+        data = json.dumps({"id":task_id})
         headers = {
             **self.headers,
             "Authorization": token,
@@ -266,15 +262,15 @@ class Kivanet:
             token = await self.user_login(email, password, proxy)
             if not token:
                 self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Status    :{Style.RESET_ALL}"
-                    f"{Fore.RED + Style.BRIGHT} Login Failed {Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT}Status    :{Style.RESET_ALL}"
+                    f"{Fore.RED+Style.BRIGHT} Login Failed {Style.RESET_ALL}"
                 )
                 proxy = self.rotate_proxy_for_account(email) if use_proxy else None
                 continue
             
             self.log(
-                f"{Fore.CYAN + Style.BRIGHT}Status    :{Style.RESET_ALL}"
-                f"{Fore.GREEN + Style.BRIGHT} Login Success {Style.RESET_ALL}"
+                f"{Fore.CYAN+Style.BRIGHT}Status    :{Style.RESET_ALL}"
+                f"{Fore.GREEN+Style.BRIGHT} Login Success {Style.RESET_ALL}"
             )
             return token
             
@@ -283,36 +279,36 @@ class Kivanet:
         if token:
             proxy = self.get_next_proxy_for_account(email) if use_proxy else None
             self.log(
-                f"{Fore.CYAN + Style.BRIGHT}Proxy     :{Style.RESET_ALL}"
-                f"{Fore.WHITE + Style.BRIGHT} {proxy} {Style.RESET_ALL}"
+                f"{Fore.CYAN+Style.BRIGHT}Proxy     :{Style.RESET_ALL}"
+                f"{Fore.WHITE+Style.BRIGHT} {proxy} {Style.RESET_ALL}"
             )
             
             balance = "Unknown"
             user = await self.user_info(token, proxy)
             if user:
-                balance = user.get("balance")
+                balance = user.get("allAccount", 0)
 
             self.log(
-                f"{Fore.CYAN + Style.BRIGHT}Balance   :{Style.RESET_ALL}"
-                f"{Fore.WHITE + Style.BRIGHT} {balance} {Style.RESET_ALL}"
+                f"{Fore.CYAN+Style.BRIGHT}Balance   :{Style.RESET_ALL}"
+                f"{Fore.WHITE+Style.BRIGHT} {balance} {Style.RESET_ALL}"
             )
 
             mining = await self.start_mining(token, proxy)
-            if mining:
+            if mining and mining.get("state", False):
                 self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Mining    :{Style.RESET_ALL}"
-                    f"{Fore.GREEN + Style.BRIGHT} Started {Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT}Mining    :{Style.RESET_ALL}"
+                    f"{Fore.GREEN+Style.BRIGHT} Started {Style.RESET_ALL}"
                 )
             else:
                 self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Mining    :{Style.RESET_ALL}"
-                    f"{Fore.RED + Style.BRIGHT} Not Started {Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT}Mining    :{Style.RESET_ALL}"
+                    f"{Fore.RED+Style.BRIGHT} Not Started {Style.RESET_ALL}"
                 )
                 
             tasks = await self.task_lists(token, proxy)
             if tasks:
                 self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Task Lists:{Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT}Task Lists:{Style.RESET_ALL}"
                 )
 
                 for task in tasks:
@@ -339,8 +335,8 @@ class Kivanet:
                             )
             else:
                 self.log(
-                    f"{Fore.CYAN + Style.BRIGHT}Task Lists:{Style.RESET_ALL}"
-                    f"{Fore.YELLOW + Style.BRIGHT} No Available {Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT}Task Lists:{Style.RESET_ALL}"
+                    f"{Fore.YELLOW+Style.BRIGHT} No Available {Style.RESET_ALL}"
                 )
     
     async def main(self):
@@ -385,23 +381,23 @@ class Kivanet:
                             await self.process_accounts(email, password, use_proxy)
                             await asyncio.sleep(3)
 
-                self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}" * 69)
+                self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*69)
                 seconds = 12 * 60 * 60
                 while seconds > 0:
                     formatted_time = self.format_seconds(seconds)
                     print(
-                        f"{Fore.CYAN + Style.BRIGHT}[ Wait for{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} {formatted_time} {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}... ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.BLUE + Style.BRIGHT}All Accounts Have Been Processed.{Style.RESET_ALL}",
+                        f"{Fore.CYAN+Style.BRIGHT}[ Wait for{Style.RESET_ALL}"
+                        f"{Fore.WHITE+Style.BRIGHT} {formatted_time} {Style.RESET_ALL}"
+                        f"{Fore.CYAN+Style.BRIGHT}... ]{Style.RESET_ALL}"
+                        f"{Fore.WHITE+Style.BRIGHT} | {Style.RESET_ALL}"
+                        f"{Fore.BLUE+Style.BRIGHT}All Accounts Have Been Processed.{Style.RESET_ALL}",
                         end="\r"
                     )
                     await asyncio.sleep(1)
                     seconds -= 1
 
         except Exception as e:
-            self.log(f"{Fore.RED + Style.BRIGHT}Error: {e}{Style.RESET_ALL}")
+            self.log(f"{Fore.RED+Style.BRIGHT}Error: {e}{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     try:
@@ -411,5 +407,5 @@ if __name__ == "__main__":
         print(
             f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.RED + Style.BRIGHT}[ EXIT ] Kivanet - BOT{Style.RESET_ALL}                                       "
+            f"{Fore.RED + Style.BRIGHT}[ EXIT ] Kivanet - BOT{Style.RESET_ALL}                                       "                              
         )
